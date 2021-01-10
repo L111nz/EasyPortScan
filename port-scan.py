@@ -3,8 +3,6 @@ import socket
 import threading
 import sys
 import queue
-import time
-import threadpool
 import IPy
 from ipaddress import ip_address
 
@@ -17,7 +15,6 @@ class GUI():
 	'''
 	def __init__(self, window):
 		self.msg_queue = queue.Queue()
-
 		self.initGUI(window)
 
 
@@ -42,16 +39,13 @@ class GUI():
 		self.threads.place(x=400, y=7)
 
 		self.scan = tk.Button(self.window, text='扫描', height=1, command=self.show)
-
 		self.scan.place(x=460, y=4)
-
 		self.show = tk.Text(self.window, height=14, width=59, fg="#06EB00", bg='black', state='disabled',font=('', 15))
-
 		self.show.place(x=3, y=33)
 
-		self.window.after(100, self.show_msg)
-		
-		sys.stdout = ReText(self.msg_queue)
+		self.msg_queue.put(help())
+		self.window.after(100, func=self.show_msg)	# 0.1秒执行一次show_msg函数
+		sys.stdout = ReText(self.msg_queue)	# 将输出重定向
 
 		self.window.mainloop()
 
@@ -76,16 +70,22 @@ class GUI():
 
 
 class ReText():
+	'''
+	队列重定向函数
+	'''
 	def __init__(self, queue):
 		self.queue = queue
 
 	def write(self, content):
+		'''
+		由于前面标准输出 sys.sdout = ReWrite 且 print函数默认调用sys.sdout.write()，所以定义wirte函数将队列内容有序put
+		'''
 		self.queue.put(content)
 
 
 class PortScan(threading.Thread):
 	'''
-	端口扫描类：
+	端口扫描类
 	'''
 	def __init__(self, port_queue, ip, timeout = 3):
 		# 规范化 三个成员变量均加上__为私有变量
@@ -103,17 +103,16 @@ class PortScan(threading.Thread):
 			if self.__port_queue.empty():
 				break
 
-			# OPEN_MSG = "% 6d [OPEN]\n"
 			port = self.__port_queue.get(timeout=0.5)
 			ip = self.ip
 			timeout = self.__timeout
 
 			try:
-				s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)	# tcp方式
 				s.settimeout(timeout)
-				result_code = s.connect_ex((ip, port))  # 开放放回0
-				if result_code == 0:
-					sys.stdout.write(f'{ip}  {port}[开放]\n')
+				res = s.connect_ex((ip, port))  # 连接成功返回0
+				if res == 0:
+					print(f'{ip}  {port}[开放]')
 
 				# result_list.append(port)
 				# else:
@@ -149,7 +148,9 @@ def get_port_list(port):
 			else:
 				print('[-] 端口范围有错')
 		else:
-			return port
+			port_list = []
+			port_list.append(int(port))
+			return port_list
 
 # 检查ip合法性
 def check_ip(ip):
@@ -210,8 +211,9 @@ def start(ip, port, thread_num):
 	ip_list = get_ip_list(ip)
 
 	for ip in ip_list:
-		print(ip)
+		# print(ip)
 		main(ip, port,thread_num)
+		print(f"[+] {ip}扫描完成\n")
 
 
 # 主方法
@@ -249,14 +251,21 @@ def main(ip, port, thread_num):
 		thread.join()
 
 
+def help():
+	str = '''端口扫描器 by L1nz
+例子:
+ 10.101.144.50-10.101.144.94  1-999  10
 
+'''
+	return str
 
 
 if __name__ == '__main__':
 
 	window = tk.Tk()
-	window.title('PortScan by L1nz')
+	window.title('PortScan')
 	tool_gui = GUI(window)
+
 
 
 	# pool = threadpool.ThreadPool(10)  # 建立线程池 开启10个线程
