@@ -71,7 +71,7 @@ class GUI():
 
 class ReText():
 	'''
-	队列重定向函数
+	队列重定向类
 	'''
 	def __init__(self, queue):
 		self.queue = queue
