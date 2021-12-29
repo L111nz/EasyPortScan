@@ -7,7 +7,7 @@ import IPy
 from ipaddress import ip_address
 
 # 端口扫描
-# 指定ip段和端口范围
+# 指定ip段和端口范围 
 
 class GUI():
 	'''
